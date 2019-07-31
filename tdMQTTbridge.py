@@ -105,7 +105,8 @@ def do_mqtt_connect(client, host):
     try:
         client.connect(host, port=1883)
         while not client.connected_flag:
-            print('+')
+            print('+', end='')
+            sys.stdout.flush()
             sleep(1)
     
     except mqtt.MQTT_ERR_ACL_DENIED:
@@ -169,22 +170,27 @@ def publishSensors(client):
     response = doRequest('sensors/list', {'includeIgnored': 0})
     # print("Number of sensors: %i" % len(response['device']))
     for sensor in response['sensor']:
-        resp2 = doRequest('sensor/info', {'id': sensor['id']})
-        
-        r = do_mqtt_publish(client, resp2['name'], json.dumps(resp2), qos=0, retain=False)
+        detail = doRequest('sensor/info', {'id': sensor['id']}) 
+        r = do_mqtt_publish(client, sensor['name'], json.dumps(detail), qos=0, retain=False)
         # print ("%s\t%s\t%s" % (sensor['id'], sensor['name'], state))
         if not r:
             return False
+        data = detail['data']
+        for d in data:
+            do_mqtt_publish(client, sensor['name']+'/'+d['name']+'/value', d['value'])
+
     return True
 
 def publishDevices(client):
     response = doRequest('devices/list', {'supportedMethods': SUPPORTED_METHODS})
     # print("Number of devices: %i" % len(response['device']))
+    mqtt.Client.devices = response['device']
     for device in response['device']:
         r = do_mqtt_publish(client, device['name'], json.dumps(device), qos=0, retain=False)
         # print ("%s\t%s\t%s" % (device['id'], device['name'], state))
         if not r:
             return False
+             
     return True
 
 
@@ -322,6 +328,7 @@ def main():
     global connect_flag
     
     mqtt.Client.connected_flag = False
+    mqtt.Client.devices = []
     # Connect to mqtt bus
     uid = config.get('mqtt', 'uid')
     host = config.get('mqtt', 'host')
@@ -332,6 +339,7 @@ def main():
     client.on_connect = on_connect
     client.on_message = on_message
     duration = int(config.get('mqtt', 'duration'))
+    print('Duration: ' + str(duration))
     client.loop_start()
     do_mqtt_connect(client, host)
     client.subscribe(project + '/getStatus')
@@ -347,6 +355,8 @@ def main():
         if not r:
             do_mqtt_connect(client, host)
             r = publishSensors(client)
+        print('.', end='')
+        sys.stdout.flush()
         sleep(duration)
     
 
