@@ -1,0 +1,7 @@
+configparser
+configobj
+requests
+requests_oauthlib
+six
+paho-mqtt
+
