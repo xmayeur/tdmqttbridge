@@ -17,6 +17,7 @@ LOG_file = project+'.log'
 INI_file = project+'.conf'
 connect_flag = False
 
+
 def open_log(name):
     # Setup the log handlers to stdout and file.
     log_ = logging.getLogger(name)
@@ -133,6 +134,8 @@ def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("connected ok")
         client.connected_flag = True
+    else:
+        log.info('mqtt on_connect return code is: ' + str(rc))
 
 
 def on_message(client, userdata, message):
@@ -141,7 +144,6 @@ def on_message(client, userdata, message):
     print('Received message: ' + topic + '/' + msg)
     if topic == project + '/getStatus':
         do_mqtt_publish(project + '/status', 'alive', qos=0, retain=False)
-
 
 
 def listDevices():
@@ -165,7 +167,6 @@ def listDevices():
     return json.dumps(response['device'], indent=4, separators=(',', ': '))
 
 
-
 def publishSensors(client):
     response = doRequest('sensors/list', {'includeIgnored': 0})
     # print("Number of sensors: %i" % len(response['device']))
@@ -181,6 +182,7 @@ def publishSensors(client):
 
     return True
 
+
 def publishDevices(client):
     response = doRequest('devices/list', {'supportedMethods': SUPPORTED_METHODS})
     # print("Number of devices: %i" % len(response['device']))
@@ -190,7 +192,16 @@ def publishDevices(client):
         # print ("%s\t%s\t%s" % (device['id'], device['name'], state))
         if not r:
             return False
-             
+        # publish details
+        do_mqtt_publish(client, device['name']+'/state', str(device['state']))
+        if device['state'] == TELLSTICK_DIM:
+            do_mqtt_publish(client, device['name'] + '/value', str(100*int(device['statevalue'])/255))
+        elif device['state'] == TELLSTICK_TURNON:
+            do_mqtt_publish(client, device['name'] + '/value', '100')
+        elif device['state'] == TELLSTICK_TURNOFF:
+            do_mqtt_publish(client, device['name'] + '/value', '0')
+        else:
+            do_mqtt_publish(client, device['name'] + '/value', '0')
     return True
 
 
@@ -357,7 +368,10 @@ def main():
             r = publishSensors(client)
         print('.', end='')
         sys.stdout.flush()
-        sleep(duration)
+        if duration == 0:
+            sys.exit(0)
+        else:
+            sleep(duration)
     
 
 if __name__ == "__main__":
