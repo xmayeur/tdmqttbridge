@@ -2,10 +2,10 @@
 FROM resin/raspberrypi3-python:3.6-slim
 
 # Set the working directory to /app
-WORKDIR /MonFreezer
+WORKDIR /app
 
 # Copy the current directory contents into the container at /app
-ADD . /MonFreezer
+ADD . /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
@@ -14,8 +14,8 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 EXPOSE 80
 
 # Define environment variable
-ENV NAME monfreezer
+ENV NAME tdmqttbridge
 
 # Run app.py when the container launches
-ENTRYPOINT ["python", "MonFreezerDoor.py"]
+ENTRYPOINT ["python", "tdMQTTbridge.py"]
 
