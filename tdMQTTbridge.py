@@ -169,7 +169,7 @@ def listDevices():
 
 def publishSensors(client):
     response = doRequest('sensors/list', {'includeIgnored': 0})
-    # print("Number of sensors: %i" % len(response['device']))
+    print("Number of sensors: %i" % len(response['sensor']))
     for sensor in response['sensor']:
         detail = doRequest('sensor/info', {'id': sensor['id']}) 
         r = do_mqtt_publish(client, sensor['name'], json.dumps(detail), qos=0, retain=False)
@@ -179,7 +179,7 @@ def publishSensors(client):
         data = detail['data']
         for d in data:
             do_mqtt_publish(client, sensor['name']+'/'+d['name']+'/value', d['value'])
-
+            print("%s\t%s:\t%s" % (sensor['name'], d['name'], d['value']))
     return True
 
 
@@ -189,7 +189,7 @@ def publishDevices(client):
     mqtt.Client.devices = response['device']
     for device in response['device']:
         r = do_mqtt_publish(client, device['name'], json.dumps(device), qos=0, retain=False)
-        # print ("%s\t%s\t%s" % (device['id'], device['name'], state))
+        print ("%s\t%s\t%s" % (device['id'], device['name'], state))
         if not r:
             return False
         # publish details
@@ -202,6 +202,7 @@ def publishDevices(client):
             do_mqtt_publish(client, device['name'] + '/value', '0')
         else:
             do_mqtt_publish(client, device['name'] + '/value', '0')
+        print("%s\t%s\t%s" % (device['name'], device['state'], device['statevalue']))
     return True
 
 
