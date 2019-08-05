@@ -64,6 +64,10 @@ def open_config(f):
 
 # Open config file
 config = open_config(INI_file)
+if config.get('mqtt', 'verbose') == 'true':
+    verbose = True
+else:
+    verbose = False
 
 
 def get_vault(uid):
@@ -132,7 +136,8 @@ def do_mqtt_publish(client, key, value, qos=0, retain=False):
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print("connected ok")
+        if verbose:
+            print("connected ok")
         client.connected_flag = True
     else:
         log.info('mqtt on_connect return code is: ' + str(rc))
@@ -169,7 +174,7 @@ def listDevices():
 
 def publishSensors(client):
     response = doRequest('sensors/list', {'includeIgnored': 0})
-    print("Number of sensors: %i" % len(response['sensor']))
+    # print("Number of sensors: %i" % len(response['sensor']))
     for sensor in response['sensor']:
         detail = doRequest('sensor/info', {'id': sensor['id']}) 
         r = do_mqtt_publish(client, sensor['name'], json.dumps(detail), qos=0, retain=False)
@@ -179,7 +184,8 @@ def publishSensors(client):
         data = detail['data']
         for d in data:
             do_mqtt_publish(client, sensor['name']+'/'+d['name']+'/value', d['value'])
-            print("%s\t%s:\t%s" % (sensor['name'], d['name'], d['value']))
+            if verbose:
+                print("%s\t%s:\t%s" % (sensor['name'], d['name'], d['value']))
     return True
 
 
@@ -189,7 +195,7 @@ def publishDevices(client):
     mqtt.Client.devices = response['device']
     for device in response['device']:
         r = do_mqtt_publish(client, device['name'], json.dumps(device), qos=0, retain=False)
-        print ("%s\t%s\t%s" % (device['id'], device['name'], state))
+        # print ("%s\t%s\t%s" % (device['id'], device['name'], ''))
         if not r:
             return False
         # publish details
@@ -202,7 +208,8 @@ def publishDevices(client):
             do_mqtt_publish(client, device['name'] + '/value', '0')
         else:
             do_mqtt_publish(client, device['name'] + '/value', '0')
-        print("%s\t%s\t%s" % (device['name'], device['state'], device['statevalue']))
+        if verbose:
+            print("%s\t%s\t%s" % (device['name'], device['state'], device['statevalue']))
     return True
 
 
@@ -360,11 +367,13 @@ def main():
         # Get device list ans state
         r = publishDevices(client)
         if not r:
+            print('reconnecting')
             do_mqtt_connect(client, host)
             r = publishDevices(client)
 
         r = publishSensors(client)
         if not r:
+            print('reconnecting')
             do_mqtt_connect(client, host)
             r = publishSensors(client)
         print('.', end='')
