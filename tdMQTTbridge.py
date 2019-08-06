@@ -281,10 +281,14 @@ def doMethod(deviceId, methodId, methodValue=0):
 
 
 def doRequest(method, params):
-    http_url = "http://api.telldus.com/json/" + method + "?" + urlencode(params, True).replace('+', '%20')
-    oauth = OAuth1(PUBLIC_KEY, PRIVATE_KEY, TOKEN, TOKEN_SECRET)
-    r = requests.get(http_url, auth=oauth)
-    return r.json()
+    try:
+        http_url = "http://api.telldus.com/json/" + method + "?" + urlencode(params, True).replace('+', '%20')
+        oauth = OAuth1(PUBLIC_KEY, PRIVATE_KEY, TOKEN, TOKEN_SECRET)
+        r = requests.get(http_url, auth=oauth)
+        return r.json()
+    except Exception as e:
+        log.critical('Error connecting to Telldus server: ' + str(e))
+        response = None
 
 
 def requestToken():
