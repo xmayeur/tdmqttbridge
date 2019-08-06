@@ -28,7 +28,10 @@ client.on_connect = on_connect
 client.on_message = on_message
 duration = 5
 client.connect(host, port=1883)
-client.subscribe('#')
+if  len(sys.argv) >1:
+    client.subscribe(sys.argv[1])
+else:
+    client.subscribe('#')
 client.loop_start()
 client.subscribe(project + '/getStatus')
 
