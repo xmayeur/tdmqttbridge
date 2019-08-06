@@ -41,7 +41,7 @@ while True:
     # Get device list ans state
     topic = 'getStatus'
     value = strftime('%x')
-    client.publish(project + '/' + topic, value, qos=0, retain=False)
+    # client.publish(project + '/' + topic, value, qos=0, retain=False)
     print('.', end='')
     sys.stdout.flush()
     sleep(duration)
