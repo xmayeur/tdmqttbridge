@@ -16,6 +16,7 @@ LOG_file = project+'.log'
 INI_file = project+'.conf'
 connect_flag = False
 
+devices = []
 
 def open_log(name):
     # Setup the log handlers to stdout and file.
@@ -148,6 +149,8 @@ def on_message(client, userdata, message):
     print('Received message: ' + topic + '/' + msg)
     if topic == project + '/getStatus':
         do_mqtt_publish(project + '/status', 'alive', qos=0, retain=False)
+    elif 'setValue' in topic:
+        do_methodByName(topic.split('/')[1], msg)
 
 
 def listDevices():
@@ -235,6 +238,19 @@ def getDeviceState(deviceID):
 
 def switchRpiOff():
     doMethod(SALON_ID, TELLSTICK_TURNOFF)
+
+
+def do_methodByName(deviceName, value):
+    d = next((x for x in devices if x.name == deviceName), None)
+    methodValue = 0
+    if value == '100':
+        methodId = TELLSTICK_TURNON
+    elif value == '0':
+        methodId = TELLSTICK_TURNOFF
+    else:
+        methodId = TELLSTICK_DIM
+        methodValue = int(round(255 * int(value) / 100))
+    doMethod(d.name, methodId, methodValue)
 
 
 def doMethod(deviceId, methodId, methodValue=0):
@@ -343,10 +359,10 @@ def authenticate():
 
 
 def main():
-    global connect_flag
+    global devices
     
     mqtt.Client.connected_flag = False
-    # mqtt.Client.devices = listDevices()
+    devices = listDevices()
     
     mqtt.Client.devices = []
     # Connect to mqtt bus
@@ -362,7 +378,7 @@ def main():
     print('Duration: ' + str(duration))
     client.loop_start()
     do_mqtt_connect(client, host)
-    client.subscribe(project + '/getStatus')
+    client.subscribe(project + '/+/setValue')
   
     while True:
         # Get device list ans state
