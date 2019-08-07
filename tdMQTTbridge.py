@@ -241,16 +241,23 @@ def switchRpiOff():
 
 
 def do_methodByName(deviceName, value):
-    d = next((x for x in devices if x.name == deviceName), None)
-    methodValue = 0
-    if value == '100':
-        methodId = TELLSTICK_TURNON
-    elif value == '0':
-        methodId = TELLSTICK_TURNOFF
-    else:
-        methodId = TELLSTICK_DIM
-        methodValue = int(round(255 * int(value) / 100))
-    doMethod(d.name, methodId, methodValue)
+    global devices
+    # d = next((x for x in devices if x.name == deviceName), None)
+    d = None
+    for d in devices:
+        if d['name'] == deviceName:
+            break
+    if d is not None:
+        methodValue = 0
+        if value == '100':
+            methodId = TELLSTICK_TURNON
+        elif value == '0':
+            methodId = TELLSTICK_TURNOFF
+        else:
+            methodId = TELLSTICK_DIM
+            methodValue = int(round(255 * int(value) / 100))
+            
+        doMethod(d['id'], methodId, methodValue)
 
 
 def doMethod(deviceId, methodId, methodValue=0):
