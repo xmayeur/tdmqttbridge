@@ -7,7 +7,6 @@ from logging.handlers import RotatingFileHandler
 import configparser
 import requests
 from six.moves.urllib.parse import urlencode
-from configobj import ConfigObj
 from requests_oauthlib import OAuth1
 import paho.mqtt.client as mqtt
 from time import sleep
@@ -169,7 +168,8 @@ def listDevices():
         else:
             state = 'Unknown state'
         # print ("%s\t%s\t%s" % (device['id'], device['name'], state))
-    return json.dumps(response['device'], indent=4, separators=(',', ': '))
+    # return json.dumps(response['device'], indent=4, separators=(',', ': '))
+    return response['device']
 
 
 def publishSensors(client):
@@ -192,7 +192,7 @@ def publishSensors(client):
 def publishDevices(client):
     response = doRequest('devices/list', {'supportedMethods': SUPPORTED_METHODS})
     # print("Number of devices: %i" % len(response['device']))
-    mqtt.Client.devices = response['device']
+    
     for device in response['device']:
         r = do_mqtt_publish(client, device['name'], json.dumps(device), qos=0, retain=False)
         # print ("%s\t%s\t%s" % (device['id'], device['name'], ''))
@@ -211,11 +211,6 @@ def publishDevices(client):
         if verbose:
             print("%s\t%s\t%s" % (device['name'], device['state'], device['statevalue']))
     return True
-
-
-# def doJob(id, deviceId, methodId, methodValue=0, type='time', hour, minute, weekdays)
-#    response = doRequest('scheduler/setJob', {'id':  id, 'deviceId': deviceId, 'method': methodId,
-#    'methodValue': methodValue, 'type': type, 'hour': hour, 'minute': minute, 'weekdays': weekdays})
 
 
 def getDeviceState(deviceID):
@@ -351,6 +346,8 @@ def main():
     global connect_flag
     
     mqtt.Client.connected_flag = False
+    # mqtt.Client.devices = listDevices()
+    
     mqtt.Client.devices = []
     # Connect to mqtt bus
     uid = config.get('mqtt', 'uid')
