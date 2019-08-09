@@ -64,7 +64,7 @@ def open_config(f):
 
 # Open config file
 config = open_config(INI_file)
-if config.get('mqtt', 'verbose') == 'true':
+if config.get('mqtt', 'verbose') == '1':
     verbose = True
 else:
     verbose = False
@@ -151,9 +151,11 @@ def on_message(client, userdata, message):
     if topic == project + '/getStatus':
         do_mqtt_publish(project + '/status', 'alive', qos=0, retain=False)
     elif 'setValue' in topic:
-        do_methodByName(topic.split('/')[1], msg)
+        r = do_methodByName(topic.split('/')[1], msg)
+        if verbose:
+            print('setValue - doMethod return ' + str(r))
     elif 'verbose' in topic:
-        if msg == 1:
+        if msg == '1':
             verbose = True
         else:
             verbose = False
@@ -263,7 +265,7 @@ def do_methodByName(deviceName, value):
             methodId = TELLSTICK_DIM
             methodValue = int(round(255 * int(value) / 100))
             
-        doMethod(d['id'], methodId, methodValue)
+        return doMethod(d['id'], methodId, methodValue)
 
 
 def doMethod(deviceId, methodId, methodValue=0):
