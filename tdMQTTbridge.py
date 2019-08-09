@@ -385,6 +385,7 @@ def main():
     print('Duration: ' + str(duration))
     client.loop_start()
     do_mqtt_connect(client, host)
+    # subscribe to any topic setting a value to a device
     client.subscribe(project + '/+/setValue')
   
     while True:
