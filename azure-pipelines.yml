@@ -1,0 +1,25 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageName: tdmqttbridge  # Replace with the name of the image you want to publish
+  dockerId: xmayeur
+
+steps:
+- script: |
+    # register QEMU binary - this can be done by running the following Docker image
+    docker run --rm --privileged multiarch/qemu-user-static:register --reset
+    docker build -t $(dockerId)/$(imageName) .
+    echo "$(dockerPassword)" | docker login -u $(dockerId) --password-stdin
+    docker push $(dockerId)/$(imageName)
+    # echo See https://aka.ms/yaml
+
+  displayName: 'Build $(imageName) container'
