@@ -144,6 +144,7 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_message(client, userdata, message):
+    global verbose
     topic = message.topic
     msg = str(message.payload.decode('utf-8'))
     print('Received message: ' + topic + '/' + msg)
@@ -151,6 +152,11 @@ def on_message(client, userdata, message):
         do_mqtt_publish(project + '/status', 'alive', qos=0, retain=False)
     elif 'setValue' in topic:
         do_methodByName(topic.split('/')[1], msg)
+    elif 'verbose' in topic:
+        if msg == 1:
+            verbose = True
+        else:
+            verbose = False
 
 
 def listDevices():
@@ -387,6 +393,8 @@ def main():
     do_mqtt_connect(client, host)
     # subscribe to any topic setting a value to a device
     client.subscribe(project + '/+/setValue')
+    # enable verbosity
+    client.subscribe(project + '/verbose')
   
     while True:
         # Get device list ans state
