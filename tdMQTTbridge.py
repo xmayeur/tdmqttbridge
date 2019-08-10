@@ -127,7 +127,7 @@ def do_mqtt_connect(client, host):
         client.connected_flag = False
 
 
-def do_mqtt_publish(client, key, value, qos=0, retain=False):
+def do_mqtt_publish(client, key, value, qos=2, retain=False):
     try:
         client.publish(project + '/' + key, str(value), qos=0, retain=False)
         return True
@@ -151,12 +151,16 @@ def on_message(client, userdata, message):
     topic = message.topic
     msg = str(message.payload.decode('utf-8'))
     print('Received message: ' + topic + '/' + msg)
+    sys.stdout.flush()
     if topic == project + '/getStatus':
         do_mqtt_publish(project + '/status', 'alive', qos=0, retain=False)
     elif 'setValue' in topic:
         r = do_methodByName(topic.split('/')[1], msg)
         if verbose:
             print('setValue - doMethod return ' + str(r))
+            sys.stdout.flush()
+    elif 'devices' in topic:
+        publishDevices(client)
     elif 'verbose' in topic:
         if msg == '1':
             verbose = True
