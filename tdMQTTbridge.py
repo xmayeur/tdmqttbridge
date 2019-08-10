@@ -10,6 +10,7 @@ from six.moves.urllib.parse import urlencode
 from requests_oauthlib import OAuth1
 import paho.mqtt.client as mqtt
 from time import sleep
+import os
 
 project = 'tdMQTTbridge'
 LOG_file = project+'.log'
@@ -113,6 +114,8 @@ def do_mqtt_connect(client, host):
             print('+', end='')
             sys.stdout.flush()
             sleep(1)
+        # re-subscribe after connection lost
+        do_subscribe(client)
     
     except mqtt.MQTT_ERR_ACL_DENIED:
         print('Invalid username or password')
@@ -373,6 +376,13 @@ def authenticate():
     requestToken()
 
 
+def do_subscribe(client):
+    # subscribe to any topic setting a value to a device
+    client.subscribe(project + '/+/setValue')
+    # enable verbosity
+    client.subscribe(project + '/verbose')
+
+
 def main():
     global devices
     
@@ -393,10 +403,7 @@ def main():
     print('Duration: ' + str(duration))
     client.loop_start()
     do_mqtt_connect(client, host)
-    # subscribe to any topic setting a value to a device
-    client.subscribe(project + '/+/setValue')
-    # enable verbosity
-    client.subscribe(project + '/verbose')
+
   
     while True:
         # Get device list ans state
