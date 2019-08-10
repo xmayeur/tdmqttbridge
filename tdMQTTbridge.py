@@ -19,6 +19,7 @@ connect_flag = False
 
 devices = []
 
+
 def open_log(name):
     # Setup the log handlers to stdout and file.
     log_ = logging.getLogger(name)
@@ -114,8 +115,7 @@ def do_mqtt_connect(client, host):
             print('+', end='')
             sys.stdout.flush()
             sleep(1)
-        # re-subscribe after connection lost
-        do_subscribe(client)
+
     
     except mqtt.MQTT_ERR_ACL_DENIED:
         print('Invalid username or password')
@@ -142,6 +142,8 @@ def on_connect(client, userdata, flags, rc):
         if verbose:
             print("connected ok")
         client.connected_flag = True
+        # subscribe after connection OK
+        do_subscribe(client)
     else:
         log.info('mqtt on_connect return code is: ' + str(rc))
 
@@ -156,11 +158,14 @@ def on_message(client, userdata, message):
         do_mqtt_publish(project + '/status', 'alive', qos=0, retain=False)
     elif 'setValue' in topic:
         r = do_methodByName(topic.split('/')[1], msg)
+        sleep(1)
+        publishDevices(client)
         if verbose:
             print('setValue - doMethod return ' + str(r))
             sys.stdout.flush()
-    elif 'devices' in topic:
+    elif topic == project + '/getDevices':
         publishDevices(client)
+        publishSensors(client)
     elif 'verbose' in topic:
         if msg == '1':
             verbose = True
@@ -385,6 +390,8 @@ def do_subscribe(client):
     client.subscribe(project + '/+/setValue')
     # enable verbosity
     client.subscribe(project + '/verbose')
+    # subscribe to explicit device status request
+    client.subscribe(project + '/getDevices')
 
 
 def main():
@@ -407,7 +414,6 @@ def main():
     print('Duration: ' + str(duration))
     client.loop_start()
     do_mqtt_connect(client, host)
-
   
     while True:
         # Get device list ans state
