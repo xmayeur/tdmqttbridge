@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from time import sleep, ctime
+from time import sleep, localtime, asctime
 
 import paho.mqtt.client as mqtt
 import requests
@@ -207,9 +207,10 @@ def publishSensors(client):
         data = detail['data']
         for d in data:
             do_mqtt_publish(client, sensor['name']+'/'+d['name']+'/value', d['value'])
-            do_mqtt_publish(client, sensor['name'] + '/' + d['name'] + '/lastUpdated', ctime(d['lastUpdated']))
+            lasttime = asctime(localtime(d['lastUpdated']))
+            do_mqtt_publish(client, sensor['name'] + '/' + d['name'] + '/lastUpdated', lasttime)
             if verbose:
-                print("%s\t%s:\t%s\t%s" % (sensor['name'], d['name'], d['value'], ctime(d['lastUpdated'])))
+                print("%s\t%s:\t%s\t%s" % (sensor['name'], d['name'], d['value'], lasttime))
     return True
 
 
