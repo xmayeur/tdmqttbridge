@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
+import configparser
 import getopt
 import json
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-import configparser
-import requests
-from six.moves.urllib.parse import urlencode
-from requests_oauthlib import OAuth1
+from time import sleep, ctime
+
 import paho.mqtt.client as mqtt
-from time import sleep
-import os
+import requests
+from requests_oauthlib import OAuth1
+from six.moves.urllib.parse import urlencode
 
 project = 'tdMQTTbridge'
 LOG_file = project+'.log'
@@ -207,8 +207,9 @@ def publishSensors(client):
         data = detail['data']
         for d in data:
             do_mqtt_publish(client, sensor['name']+'/'+d['name']+'/value', d['value'])
+            do_mqtt_publish(client, sensor['name'] + '/' + d['name'] + '/lastUpdated', ctime(d['lastUpdated']))
             if verbose:
-                print("%s\t%s:\t%s" % (sensor['name'], d['name'], d['value']))
+                print("%s\t%s:\t%s\t%s" % (sensor['name'], d['name'], d['value'], ctime(d['lastUpdated'])))
     return True
 
 
