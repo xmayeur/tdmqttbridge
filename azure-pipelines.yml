@@ -19,7 +19,7 @@ steps:
 - script: |
     # register QEMU binary - this can be done by running the following Docker image
     docker run --rm --privileged multiarch/qemu-user-static:register --reset
-    docker build -t $(dockerId)/$(imageName) -f Dockerfile$(suffix) .
+    docker build -t $(dockerId)/$(imageName)$(suffix) -f Dockerfile$(suffix) .
     echo "$(dockerPassword)" | docker login -u $(dockerId) --password-stdin
     docker push $(dockerId)/$(imageName)$(suffix)
     # echo See https://aka.ms/yaml
