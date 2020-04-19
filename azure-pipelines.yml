@@ -23,7 +23,8 @@ steps:
     echo "$(dockerPassword)" | docker login -u $(dockerId) --password-stdin
     docker push $(dockerId)/$(imageName)$(suffix)
     # echo See https://aka.ms/yaml
-    displayName: 'Build $(imageName) container'
+
+  displayName: 'Build $(imageName) container'
 
 - publish: $(System.DefaultWorkingDirectory)/
   artifact: tdmqttbridge
