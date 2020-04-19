@@ -7,4 +7,4 @@ fi
 
 sudo docker pull xmayeur/$container$suffix
 
-sudo docker-compose -f docker-compose-x86.yml up -d $container
+sudo docker-compose -f docker-compose-x86.yml up -d $container 2>/dev/null
