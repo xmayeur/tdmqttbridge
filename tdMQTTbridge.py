@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import configparser
 import getopt
 import json
 import logging
@@ -7,14 +6,16 @@ import sys
 from logging.handlers import RotatingFileHandler
 from time import sleep, localtime, asctime
 
+import oyaml
 import paho.mqtt.client as mqtt
+import redis
 import requests
 from requests_oauthlib import OAuth1
 from six.moves.urllib.parse import urlencode
 
 project = 'tdMQTTbridge'
-LOG_file = project+'.log'
-INI_file = project+'.conf'
+LOG_file = project + '.log'
+INI_file = project + '.conf'
 connect_flag = False
 
 devices = []
@@ -47,38 +48,24 @@ def open_log(name):
 
 log = open_log(project)
 
-
-def open_config(f):
-    global log
-    log = open_log(project + '.open_config')
-    # Read config file - halt script on failure
-    config_ = None
-    try:
-        with open(f, 'r+') as config_file:
-            config_ = configparser.ConfigParser()
-            config_.read_file(config_file)
-    except IOError:
-        pass
-    if config_ is None:
-        log.critical('configuration file is missing')
-    return config_
-
-
 # Open config file
-config = open_config(INI_file)
-if config.get('mqtt', 'verbose') == '1':
-    verbose = True
-else:
-    verbose = False
+try:
+    config = oyaml.load(open(INI_file, 'r'), Loader=oyaml.Loader)
+except IOError:
+    log.critical('configuration file is missing')
+    config = None
+    exit(-1)
 
 
 def get_vault(uid):
-    url = config.get('vault', 'vault_url')
-    r = requests.get(url=url + '?uid=%s' % uid)
-    _id = r.json()
-    r.close()
-
-    if _id['status'] == 200:
+    global config
+    host = config['redis']['host']
+    port = config['redis']['port']
+    vaultdb = config['redis']['vaultdb']
+    vault = redis.Redis(host=host, port=port, db=vaultdb)
+    _s = vault.get(uid)
+    _id = json.loads(_s)
+    if id:
         _username = _id['username']
         _password = _id['password']
     else:
@@ -87,8 +74,10 @@ def get_vault(uid):
     return _username, _password
 
 
-telldus_key = config.get('telldus', 'client')
-telldus_apptoken = config.get('telldus', 'token')
+verbose = config['mqtt']['verbose']
+
+telldus_key = config['telldus']['client']
+telldus_apptoken = config['telldus']['token']
 PUBLIC_KEY, PRIVATE_KEY = get_vault(telldus_key)
 TOKEN, TOKEN_SECRET = get_vault(telldus_apptoken)
 
@@ -116,7 +105,7 @@ def do_mqtt_connect(client, host):
             sys.stdout.flush()
             sleep(1)
 
-    
+
     except mqtt.MQTT_ERR_ACL_DENIED:
         print('Invalid username or password')
         log.critical('Invalid username or password')
@@ -135,7 +124,7 @@ def do_mqtt_publish(client, key, value, qos=2, retain=False):
         print('Cannot publish to mqtt broker -  error: ' + str(e))
         log.critical('Cannot publish to mqtt broker - retrying')
         return False
-        
+
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -155,7 +144,7 @@ def on_message(client, userdata, message):
     print('Received message: ' + topic + '/' + msg)
     sys.stdout.flush()
     if topic == project + '/getStatus':
-        do_mqtt_publish(project + '/status', 'alive', qos=0, retain=False)
+        do_mqtt_publish(client, project + '/status', 'alive', qos=0, retain=False)
     elif 'setValue' in topic:
         r = do_methodByName(topic.split('/')[1], msg)
         sleep(1)
@@ -174,7 +163,6 @@ def on_message(client, userdata, message):
 
 
 def listDevices():
-
     response = doRequest('devices/list', {'supportedMethods': SUPPORTED_METHODS})
     # print("Number of devices: %i" % len(response['device']))
     for device in response['device']:
@@ -199,14 +187,14 @@ def publishSensors(client):
     response = doRequest('sensors/list', {'includeIgnored': 0})
     # print("Number of sensors: %i" % len(response['sensor']))
     for sensor in response['sensor']:
-        detail = doRequest('sensor/info', {'id': sensor['id']}) 
+        detail = doRequest('sensor/info', {'id': sensor['id']})
         r = do_mqtt_publish(client, sensor['name'], json.dumps(detail), qos=0, retain=False)
         # print ("%s\t%s\t%s" % (sensor['id'], sensor['name'], state))
         if not r:
             return False
         data = detail['data']
         for d in data:
-            do_mqtt_publish(client, sensor['name']+'/'+d['name']+'/value', d['value'])
+            do_mqtt_publish(client, sensor['name'] + '/' + d['name'] + '/value', d['value'])
             lasttime = asctime(localtime(d['lastUpdated']))
             do_mqtt_publish(client, sensor['name'] + '/' + d['name'] + '/lastUpdated', lasttime)
             if verbose:
@@ -224,9 +212,9 @@ def publishDevices(client):
         if not r:
             return False
         # publish details
-        do_mqtt_publish(client, device['name']+'/state', str(device['state']))
+        do_mqtt_publish(client, device['name'] + '/state', str(device['state']))
         if device['state'] == TELLSTICK_DIM:
-            do_mqtt_publish(client, device['name'] + '/value', str(100*int(device['statevalue'])/255))
+            do_mqtt_publish(client, device['name'] + '/value', str(100 * int(device['statevalue']) / 255))
         elif device['state'] == TELLSTICK_TURNON:
             do_mqtt_publish(client, device['name'] + '/value', '100')
         elif device['state'] == TELLSTICK_TURNOFF:
@@ -278,7 +266,7 @@ def do_methodByName(deviceName, value):
         else:
             methodId = TELLSTICK_DIM
             methodValue = int(round(255 * int(value) / 100))
-            
+
         return doMethod(d['id'], methodId, methodValue)
 
 
@@ -344,7 +332,7 @@ def requestToken():
     # resp = conn.getresponse().read()
     # token = oauth.Token.from_string(resp)
     # print((
-    #         'Open the following url in your webbrowser:\nhttp://api.telldus.com/oauth/authorize?oauth_token=%s\n' % token.key))
+    #     'Open the following url in your webbrowser:\nhttp://api.telldus.com/oauth/authorize?oauth_token=%s\n' % token.key))
     # print(('After logging in and accepting to use this application run:\n%s --authenticate' % (sys.argv[0])))
     # config['telldus']['requestToken'] = str(token.key)
     # config['telldus']['requestTokenSecret'] = str(token.secret)
@@ -404,19 +392,19 @@ def main():
     
     mqtt.Client.devices = []
     # Connect to mqtt bus
-    uid = config.get('mqtt', 'uid')
-    host = config.get('mqtt', 'host')
+    uid = config['mqtt']['uid']
+    host = config['mqtt']['host']
     
     uname, pwd = get_vault(uid)
     client = mqtt.Client(project)
     client.username_pw_set(username=uname, password=pwd)
     client.on_connect = on_connect
     client.on_message = on_message
-    duration = int(config.get('mqtt', 'duration'))
+    duration = int(config['mqtt']['duration'])
     print('Duration: ' + str(duration))
     client.loop_start()
     do_mqtt_connect(client, host)
-  
+    
     while True:
         # Get device list ans state
         r = publishDevices(client)
@@ -436,8 +424,7 @@ def main():
             sys.exit(0)
         else:
             sleep(duration)
-    
+
 
 if __name__ == "__main__":
     main()
-

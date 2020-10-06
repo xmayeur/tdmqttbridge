@@ -3,4 +3,5 @@ requests
 requests_oauthlib
 six
 paho-mqtt
-
+redis
+oyaml
