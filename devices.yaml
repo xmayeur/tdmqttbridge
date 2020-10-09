@@ -1,0 +1,37 @@
+AmpliChambre:
+  protocol: arctech
+  model: selflearning
+  house: 0x7DDABBE
+  unit: 2
+  method: 1
+  floor: 2
+  telco: 2.3
+
+capteurJardin:
+  class: sensor
+  protocol: oregon
+  model: 1A2S
+  doc: >
+    https://github.com/phardy/WeatherStation#thgn132n-decoding
+    THGN132N Decoding
+    This sensor uses the Oregon Scientific V2 protocol. The Ook_OSv2 sketch from http://jeelabs.net/projects/cafe/wiki/Decoding_the_Oregon_Scientific_V2_protocol decodes the data packets.    A data packet looks similar to Oregon Scientific devices - the header stuff is identical, and numbers from the sensor are stored in binary-coded decimal.
+    A sample packet looks like this:
+
+    1A 2D 10 EC 32 27 50 06 44 25
+
+    The nibbles that I know about are:
+
+    0-3: Device ID. The ID for THGN132N sensors is 1A2D.
+    4: Channel. This corresponds to the channel slider on the back of the sensor.
+    5: Battery? All of my readings have 0 for this nibble. I'm half-expecting it to become non-zero on low battery.
+    6-7: Rolling code. This is a unique identifier for the sensor. It resets when the battery is replaced.
+    8: The tenths digit of the temperature.
+    10: The tens digit of the temperature.
+    11: The unit digit of the temperature.
+    12: The unit digit of the humidity.
+    13: The sign for the temperature. This nibble will be 0 for a +ve temp, and non-zero for -ve. During my testing with the sensor in the freezer, I've only seen this return 0 or 8.
+    15: The tens digit of the humidity.
+    The sample packet above is from a THGN132N on channel 1 with rolling code EC. It's returning a temperature of +27.3°C, and humidity 65%.
+
+    I'm expecting the checksum to work like other Oregon Scientific devices, but haven't yet implemented it.
+
