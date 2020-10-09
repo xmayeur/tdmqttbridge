@@ -12,7 +12,7 @@ import socket
 
 UDPSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 UDPSock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-UDPSock.setblocking(1)
+UDPSock.setblocking(True)
 UDPSock.settimeout(3)
 
 UDPSock.bind(('', 42314))
