@@ -1,10 +1,10 @@
 #!/bin/bash
 container=tdmqttbridge
-suffix=-x86
+suffix=arm7
 if [ -n "$(docker ps -q -f name=$container)" ] ; then
     sudo docker rm -f  $container
 fi
 
-sudo docker pull xmayeur/$container$suffix
+sudo docker pull xmayeur/$container:$suffix
 
-sudo docker-compose -f docker-compose-x86.yml up -d $container 2>/dev/null
+sudo docker-compose -f docker-compose-$suffix.yml up -d $container 2>/dev/null
