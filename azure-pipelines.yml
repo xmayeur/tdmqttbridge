@@ -12,8 +12,7 @@ pool:
 variables:
   imageName: tdmqttbridge  # Replace with the name of the image you want to publish
   dockerId: xmayeur
-  suffix: -x86
-
+  suffix: -arm7
 
 steps:
 - script: |
