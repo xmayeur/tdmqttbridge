@@ -134,9 +134,12 @@ def on_connect(client, userdata, flags, rc):
     else:
         log.info('mqtt on_connect return code is: ' + str(rc))
 
-
+block = False
 def on_message(client, userdata, message):
-    global verbose
+    global verbose, block
+    if block:
+        return
+    block = True
     topic = message.topic
     msg = str(message.payload.decode('utf-8'))
     print('Received message: ' + topic + '/' + msg)
@@ -145,8 +148,8 @@ def on_message(client, userdata, message):
         do_mqtt_publish(client, project + '/status', 'alive', qos=0, retain=False)
     elif 'setValue' in topic:
         r = do_methodByName(topic.split('/')[1], msg)
-        sleep(1)
-        publishDevices(client)
+        # sleep(1)
+        # publishDevices(client)
         if verbose:
             print('setValue - doMethod return ' + str(r))
             sys.stdout.flush()
@@ -159,6 +162,7 @@ def on_message(client, userdata, message):
         else:
             verbose = False
     client.on_message = on_message
+    block = False
 
 
 def listDevices():
