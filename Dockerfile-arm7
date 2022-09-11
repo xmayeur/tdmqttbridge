@@ -1,8 +1,6 @@
 # Use an official Python runtime as a parent image
 # FROM resin/raspberrypi3-python:3.6-slim
-FROM balenalib/raspberry-pi-python
-
-RUN dpkg -i libseccomp2_2.5.1-1_armhf.deb
+FROM balenalib/armv7hf-debian-python
 
 # Set the working directory to /app
 WORKDIR /app
