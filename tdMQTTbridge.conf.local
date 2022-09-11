@@ -2,14 +2,14 @@
 redis:
   vaultdb: 1
   spamdb: 2
-  host: 192.168.1.10 # localhost
-  port: 6380  # 6379
+  host: localhost
+  port: 6379
 
 mqtt:
   uid: iot
   duration: 10
-  host: 192.168.1.10  # mqtt
-  port: 1884
+  host: mqtt
+  port: 1883
   verbose: True
 
 telldus:

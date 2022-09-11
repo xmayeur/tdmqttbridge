@@ -96,19 +96,17 @@ NAS_ID = 274165
 SUPPORTED_METHODS = TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL | TELLSTICK_DIM | TELLSTICK_UP | TELLSTICK_DOWN
 
 
-def do_mqtt_connect(client, host):
+def do_mqtt_connect(client, host, port):
     global connect_flag
     try:
-        client.connect(host, port=1883)
+        client.connect(host, port=port)
         while not client.connected_flag:
             print('+', end='')
             sys.stdout.flush()
             sleep(1)
-
-
-    except mqtt.MQTT_ERR_ACL_DENIED:
-        print('Invalid username or password')
-        log.critical('Invalid username or password')
+    # except mqtt.MQTT_ERR_ACL_DENIED:
+    #     print('Invalid username or password')
+    #     log.critical('Invalid username or password')
     
     except Exception as e:
         print('Cannot connect to mqtt broker -  error: ' + str(e))
@@ -160,6 +158,7 @@ def on_message(client, userdata, message):
             verbose = True
         else:
             verbose = False
+    client.on_message = on_message
 
 
 def listDevices():
@@ -394,7 +393,8 @@ def main():
     # Connect to mqtt bus
     uid = config['mqtt']['uid']
     host = config['mqtt']['host']
-    
+    port = config['mqtt']['port']
+
     uname, pwd = get_vault(uid)
     client = mqtt.Client(project)
     client.username_pw_set(username=uname, password=pwd)
@@ -403,9 +403,10 @@ def main():
     duration = int(config['mqtt']['duration'])
     print('Duration: ' + str(duration))
     client.loop_start()
-    do_mqtt_connect(client, host)
+    do_mqtt_connect(client, host, port)
     
     while True:
+        client.on_message = on_message
         # Get device list ans state
         r = publishDevices(client)
         if not r:
